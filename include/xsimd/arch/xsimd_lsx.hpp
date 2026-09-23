@@ -907,6 +907,32 @@ namespace xsimd
             else
                 return detail::lsx_from_int<T, A>(__lsx_vilvh_d(detail::lsx_to_int(other), detail::lsx_to_int(self)));
         }
+
+        // swizzle
+        template <class A, class T, class IT>
+        XSIMD_INLINE std::enable_if_t<std::is_arithmetic_v<T>, batch<T, A>>
+        swizzle(batch<T, A> const& self, batch<IT, A> mask, requires_arch<lsx>) noexcept
+        {
+            if constexpr (sizeof(T) == 1)
+                return detail::lsx_from_int<T, A>(__lsx_vshuf_b(detail::lsx_to_int(self),
+                                                                detail::lsx_to_int(self),
+                                                                detail::lsx_to_int(mask)));
+            else
+            {
+                constexpr auto pikes = static_cast<as_unsigned_integer_t<T>>(0x0706050403020100ul);
+                constexpr auto comb = static_cast<as_unsigned_integer_t<T>>(0x0101010101010101ul * sizeof(T));
+                return bitwise_cast<T>(swizzle(bitwise_cast<uint8_t>(self),
+                                               bitwise_cast<uint8_t>(mask * comb + pikes),
+                                               lsx {}));
+            }
+        }
+
+        template <class A, class T, class ITy, ITy... Is>
+        XSIMD_INLINE std::enable_if_t<std::is_arithmetic_v<T>, batch<T, A>>
+        swizzle(batch<T, A> const& self, batch_constant<ITy, A, Is...> mask, requires_arch<lsx>) noexcept
+        {
+            return swizzle(self, mask.as_batch(), lsx {});
+        }
     }
 }
 

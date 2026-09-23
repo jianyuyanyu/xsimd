@@ -1004,6 +1004,42 @@ namespace xsimd
             }
             return detail::lasx_from_int<T, A>(__lasx_xvpermi_q(hi, lo, 0x31));
         }
+
+        // swizzle
+        template <class A, class T, class IT>
+        XSIMD_INLINE std::enable_if_t<std::is_arithmetic_v<T>, batch<T, A>>
+        swizzle(batch<T, A> const& self, batch<IT, A> mask, requires_arch<lasx>) noexcept
+        {
+            if constexpr (sizeof(T) == 1)
+            {
+                const __m256i bits = detail::lasx_to_int(self);
+                const __m256i swapped = __lasx_xvpermi_q(bits, bits, 0x01);
+                batch<uint8_t, A> mask_u8 = bitwise_cast<uint8_t>(mask);
+                const __m256i half_mask = detail::lasx_to_int(mask_u8 & 0b1111u);
+                batch<uint8_t, A> r0 = detail::lasx_from_int<uint8_t, A>(__lasx_xvshuf_b(bits, bits, half_mask));
+                batch<uint8_t, A> r1 = detail::lasx_from_int<uint8_t, A>(__lasx_xvshuf_b(swapped, swapped, half_mask));
+
+                constexpr auto lane_size = make_batch_constant<uint8_t, 16, A>();
+                constexpr auto lane = (make_iota_batch_constant<uint8_t, A>() / lane_size) * lane_size;
+                batch_bool<uint8_t, A> blend_mask = (mask_u8 & 0b10000u) != lane;
+                return bitwise_cast<T>(select(blend_mask, r1, r0));
+            }
+            else
+            {
+                constexpr auto pikes = static_cast<as_unsigned_integer_t<T>>(0x0706050403020100ul);
+                constexpr auto comb = static_cast<as_unsigned_integer_t<T>>(0x0101010101010101ul * sizeof(T));
+                return bitwise_cast<T>(swizzle(bitwise_cast<uint8_t>(self),
+                                               bitwise_cast<uint8_t>(mask * comb + pikes),
+                                               lasx {}));
+            }
+        }
+
+        template <class A, class T, class ITy, ITy... Is>
+        XSIMD_INLINE std::enable_if_t<std::is_arithmetic_v<T>, batch<T, A>>
+        swizzle(batch<T, A> const& self, batch_constant<ITy, A, Is...> mask, requires_arch<lasx>) noexcept
+        {
+            return swizzle(self, mask.as_batch(), lasx {});
+        }
     }
 }
 
