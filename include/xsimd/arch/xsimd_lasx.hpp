@@ -282,6 +282,19 @@ namespace xsimd
         }
 
         template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
+        XSIMD_INLINE batch<T, A> bitwise_lshift(batch<T, A> const& self, batch<T, A> const& shift, requires_arch<lasx>) noexcept
+        {
+            if constexpr (sizeof(T) == 1)
+                return __lasx_xvsll_b(self.data, shift.data);
+            else if constexpr (sizeof(T) == 2)
+                return __lasx_xvsll_h(self.data, shift.data);
+            else if constexpr (sizeof(T) == 4)
+                return __lasx_xvsll_w(self.data, shift.data);
+            else
+                return __lasx_xvsll_d(self.data, shift.data);
+        }
+
+        template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
         XSIMD_INLINE batch<T, A> bitwise_rshift(batch<T, A> const& self, std::int32_t other, requires_arch<lasx>) noexcept
         {
             if constexpr (std::is_signed_v<T>)
@@ -305,6 +318,33 @@ namespace xsimd
                     return __lasx_xvsrl_w(self.data, __lasx_xvreplgr2vr_w(other));
                 else
                     return __lasx_xvsrl_d(self.data, __lasx_xvreplgr2vr_d(other));
+            }
+        }
+
+        template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
+        XSIMD_INLINE batch<T, A> bitwise_rshift(batch<T, A> const& self, batch<T, A> const& shift, requires_arch<lasx>) noexcept
+        {
+            if constexpr (std::is_signed_v<T>)
+            {
+                if constexpr (sizeof(T) == 1)
+                    return __lasx_xvsra_b(self.data, shift.data);
+                else if constexpr (sizeof(T) == 2)
+                    return __lasx_xvsra_h(self.data, shift.data);
+                else if constexpr (sizeof(T) == 4)
+                    return __lasx_xvsra_w(self.data, shift.data);
+                else
+                    return __lasx_xvsra_d(self.data, shift.data);
+            }
+            else
+            {
+                if constexpr (sizeof(T) == 1)
+                    return __lasx_xvsrl_b(self.data, shift.data);
+                else if constexpr (sizeof(T) == 2)
+                    return __lasx_xvsrl_h(self.data, shift.data);
+                else if constexpr (sizeof(T) == 4)
+                    return __lasx_xvsrl_w(self.data, shift.data);
+                else
+                    return __lasx_xvsrl_d(self.data, shift.data);
             }
         }
 

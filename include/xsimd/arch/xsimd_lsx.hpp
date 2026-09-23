@@ -257,6 +257,19 @@ namespace xsimd
         }
 
         template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
+        XSIMD_INLINE batch<T, A> bitwise_lshift(batch<T, A> const& self, batch<T, A> const& shift, requires_arch<lsx>) noexcept
+        {
+            if constexpr (sizeof(T) == 1)
+                return __lsx_vsll_b(self.data, shift.data);
+            else if constexpr (sizeof(T) == 2)
+                return __lsx_vsll_h(self.data, shift.data);
+            else if constexpr (sizeof(T) == 4)
+                return __lsx_vsll_w(self.data, shift.data);
+            else
+                return __lsx_vsll_d(self.data, shift.data);
+        }
+
+        template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
         XSIMD_INLINE batch<T, A> bitwise_rshift(batch<T, A> const& self, std::int32_t other, requires_arch<lsx>) noexcept
         {
             if constexpr (std::is_signed_v<T>)
@@ -280,6 +293,33 @@ namespace xsimd
                     return __lsx_vsrl_w(self.data, __lsx_vreplgr2vr_w(other));
                 else
                     return __lsx_vsrl_d(self.data, __lsx_vreplgr2vr_d(other));
+            }
+        }
+
+        template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
+        XSIMD_INLINE batch<T, A> bitwise_rshift(batch<T, A> const& self, batch<T, A> const& shift, requires_arch<lsx>) noexcept
+        {
+            if constexpr (std::is_signed_v<T>)
+            {
+                if constexpr (sizeof(T) == 1)
+                    return __lsx_vsra_b(self.data, shift.data);
+                else if constexpr (sizeof(T) == 2)
+                    return __lsx_vsra_h(self.data, shift.data);
+                else if constexpr (sizeof(T) == 4)
+                    return __lsx_vsra_w(self.data, shift.data);
+                else
+                    return __lsx_vsra_d(self.data, shift.data);
+            }
+            else
+            {
+                if constexpr (sizeof(T) == 1)
+                    return __lsx_vsrl_b(self.data, shift.data);
+                else if constexpr (sizeof(T) == 2)
+                    return __lsx_vsrl_h(self.data, shift.data);
+                else if constexpr (sizeof(T) == 4)
+                    return __lsx_vsrl_w(self.data, shift.data);
+                else
+                    return __lsx_vsrl_d(self.data, shift.data);
             }
         }
 
