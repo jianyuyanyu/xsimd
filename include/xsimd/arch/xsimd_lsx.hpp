@@ -717,6 +717,34 @@ namespace xsimd
             return __lsx_vfmul_d(self.data, other.data);
         }
 
+        // mul_hi
+        template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
+        XSIMD_INLINE batch<T, A> mul_hi(batch<T, A> const& self, batch<T, A> const& other, requires_arch<lsx>) noexcept
+        {
+            if constexpr (std::is_signed_v<T>)
+            {
+                if constexpr (sizeof(T) == 1)
+                    return __lsx_vmuh_b(self.data, other.data);
+                else if constexpr (sizeof(T) == 2)
+                    return __lsx_vmuh_h(self.data, other.data);
+                else if constexpr (sizeof(T) == 4)
+                    return __lsx_vmuh_w(self.data, other.data);
+                else
+                    return __lsx_vmuh_d(self.data, other.data);
+            }
+            else
+            {
+                if constexpr (sizeof(T) == 1)
+                    return __lsx_vmuh_bu(self.data, other.data);
+                else if constexpr (sizeof(T) == 2)
+                    return __lsx_vmuh_hu(self.data, other.data);
+                else if constexpr (sizeof(T) == 4)
+                    return __lsx_vmuh_wu(self.data, other.data);
+                else
+                    return __lsx_vmuh_du(self.data, other.data);
+            }
+        }
+
         template <class A, class T, class = std::enable_if_t<std::is_integral_v<T>>>
         XSIMD_INLINE batch<T, A> neg(batch<T, A> const& self, requires_arch<lsx>) noexcept
         {
